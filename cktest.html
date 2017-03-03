@@ -89,7 +89,8 @@
 					ulStreams=document.getElementById("ulStreams").value,
 					dlLen=document.getElementById("dlLen").value,
 					ulLen=document.getElementById("ulLen").value;
-                w.postMessage('start {"time_ul":"'+ulLen+'", "time_dl":"'+dlLen+'", "count_ping":"50", "xhr_dlMultistream":"'+dlStreams+'","xhr_ulMultistream":"'+ulStreams+'","garbagePhp_chunkSize":"'+ckSize+'"}');
+					dlBlob=document.getElementById("dlBlob").checked?"true":"false";
+                w.postMessage('start {"time_ul":"'+ulLen+'", "time_dl":"'+dlLen+'", "count_ping":"50", "xhr_dlMultistream":"'+dlStreams+'","xhr_ulMultistream":"'+ulStreams+'","garbagePhp_chunkSize":"'+ckSize+'","xhr_dlUseBlob":"'+dlBlob+'"}');
             }
             function abortTest(){
                 if(w)w.postMessage("abort");
@@ -190,6 +191,7 @@
 		UL Chunk Size<input type="text" id="ulStreams" value="3"/><br/>
 		DL duration<input type="text" id="dlLen" value="15"/><br/>
 		UL duration<input type="text" id="ulLen" value="15"/><br/>
+		Use Blob for DL<input type="checkbox" id="dlBlob"/><br/>
 		<br/>
         <div id="testArea">
             <div class="meter" id="ggdl"></div>
