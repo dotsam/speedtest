@@ -156,6 +156,9 @@ w.postMessage('start {"param1": "value1", "param2": "value2", ...}')
 * __count_ping__: How many pings to perform in the ping test
     * Default: `35`
     * Recommended: `>=20`
+* __ping_timeout__: Max wait time for a ping request in milliseconds
+    * Default: `1000`
+    * Recommended: `>=10`
 * __url_dl__: path to garbage.php or a large file to use for the download test
     * Default: `/download/`
     * __Important:__ route configured in .htaccess file

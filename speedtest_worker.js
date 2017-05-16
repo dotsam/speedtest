@@ -23,6 +23,7 @@ var settings = {
   time_ul: 15, // duration of upload test in seconds
   time_dl: 15, // duration of download test in seconds
   count_ping: 35, // number of pings to perform in ping test
+  ping_timeout: 1000, // timeout for ping requests
   url_dl: '/download/', // path to a large file or garbage.php, used for download test.
   url_ul: '/upload', // path to an empty file, used for upload test.
   url_ping: '/ping', // path to an empty file, used for ping test.
@@ -88,6 +89,7 @@ this.addEventListener('message', function (e) {
       if (typeof s.url_dl !== 'undefined') settings.url_dl = s.url_dl // download url
       if (typeof s.url_ul !== 'undefined') settings.url_ul = s.url_ul // upload url
       if (typeof s.url_ping !== 'undefined') settings.url_ping = s.url_ping // ping url
+        if (typeof s.ping_timeout !== 'undefined') settings.ping_timeout = s.ping_timeout // ping timeout
       if (typeof s.url_getIp !== 'undefined') settings.url_getIp = s.url_getIp // url to getIP.php
       if (typeof s.url_getPointsOfTest !== 'undefined') settings.url_getPointsOfTest = s.url_getPointsOfTest // point of test list url
       if (typeof s.url_saveResult !== 'undefined') settings.url_saveResult = s.url_saveResult // save result url
@@ -421,8 +423,13 @@ function pingTest (done) {
   xhr = []
   // ping function
   var doPing = function () {
+    var pingCb = function () {
+      i++
+      if (i < settings.count_ping) { doPing() } else { done() } // more pings to do?
+    }
     prevT = new Date().getTime()
     xhr[0] = new XMLHttpRequest()
+    xhr[0].timeout = settings.ping_timeout
     xhr[0].onload = function () {
       // pong
       if (i === 0) {
@@ -438,11 +445,11 @@ function pingTest (done) {
       }
       pingStatus = ping.toFixed(2)
       jitterStatus = jitter.toFixed(2)
-      i++
-      if (i < settings.count_ping) { doPing() } else { done() } // more pings to do?
+      pingCb()
     }
-    xhr[0].onerror = function () {
+    xhr[0].ontimeout = xhr[0].onerror = function () {
       packetLoss += 1
+      pingCb()
     }
     // sent xhr
     xhr[0].open('GET', settings.url_ping + '?r=' + Math.random(), true) // random string to prevent caching
