@@ -75,6 +75,7 @@ this.addEventListener('message', function (e) {
       'jitter': jitterStatus,
       'packetloss': packetLoss,
       'pot': pot,
+      'ip': clientIp,
       'useragent': useragent,
       'country': country,
       'region': region,
@@ -89,7 +90,7 @@ this.addEventListener('message', function (e) {
       if (typeof s.url_dl !== 'undefined') settings.url_dl = s.url_dl // download url
       if (typeof s.url_ul !== 'undefined') settings.url_ul = s.url_ul // upload url
       if (typeof s.url_ping !== 'undefined') settings.url_ping = s.url_ping // ping url
-        if (typeof s.ping_timeout !== 'undefined') settings.ping_timeout = s.ping_timeout // ping timeout
+      if (typeof s.ping_timeout !== 'undefined') settings.ping_timeout = s.ping_timeout // ping timeout
       if (typeof s.url_getIp !== 'undefined') settings.url_getIp = s.url_getIp // url to getIP.php
       if (typeof s.url_getPointsOfTest !== 'undefined') settings.url_getPointsOfTest = s.url_getPointsOfTest // point of test list url
       if (typeof s.url_saveResult !== 'undefined') settings.url_saveResult = s.url_saveResult // save result url
@@ -133,13 +134,15 @@ this.addEventListener('message', function (e) {
     console.log(settings)
     console.log('Fetch API: ' + useFetchAPI)
     getServer(function () {
-      ispInfo(function () {
-        dlTest(function () {
-          testStatus = 2
-          pingTest(function () {
-            testStatus = 3
-            ulTest(function () {
-              testStatus = 4
+      getIp(function() {
+        ispInfo(function () {
+          dlTest(function () {
+            testStatus = 2
+            pingTest(function () {
+              testStatus = 3
+              ulTest(function () {
+                testStatus = 4
+              })
             })
           })
         })
@@ -191,6 +194,7 @@ function getIp (done) {
 // returns a server url with the lowest latency
 function getServer (done) {
   // single point of test
+  pot = self.location.origin
   if (!settings.enable_multiPots) { return done() }
   var pots = {}
   var times = []
@@ -216,7 +220,7 @@ function getServer (done) {
     }
     for (var i = 0; i < pointsOfTest.length; i++) {
       try {
-        doPing(pointsOfTest[i])
+        doPing(pointsOfTest[i] + routes['ping'])
       } catch (e) {
         ping = 'Fail'
       }
@@ -227,9 +231,10 @@ function getServer (done) {
     }
     times.sort(function (a, b) { return a - b })
     pot = pots[times[0]]
-    settings.url_ping = pot
+    settings.url_ping = pot + routes['ping']
     settings.url_dl = pot + routes['download']
     settings.url_ul = pot + routes['upload']
+    settings.url_getIp = pot + routes['ip']
     console.log('Available servers: ' + JSON.stringify(pots))
     console.log('Best point of test: ' + pot)
     done()
@@ -472,7 +477,7 @@ function ispInfo (done) {
     xhr.onerror = function () {
       done()
     }
-    xhr.open('GET', settings.url_ispInfo, true)
+    xhr.open('GET', settings.url_ispInfo + '/' + clientIp + '/json', true)
     xhr.setRequestHeader('Accept', 'application/json')
     xhr.send()
   } catch (e) {

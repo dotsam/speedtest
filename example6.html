@@ -19,10 +19,6 @@
             content: "0.00";
             color: #636c72;
         }
-        #st-ip:empty::before {
-            content: "___.___.___.___";
-            color: #636c72;
-        }
     </style>
 </head>
 
@@ -35,10 +31,21 @@
                     <button id="st-start" class="btn btn-outline-primary st-btn" onclick="startTest()">Start</button>
                     <button id="st-stop" class="btn btn-danger st-btn" onclick="stopTest()" hidden="true">Stop</button>
                 </p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-4 mb-3">
                 <p class="lead">
                     Your IP: <span id="st-ip"></span>
                 </p>
             </div>
+            <div class="col-sm-6 mb-3">
+                <p class="lead">
+                    Test Server: <span id="st-pot"></span>
+                </p>
+            </div>
+        </div>
+        <div class="row">
             <div class="col-lg-3 col-md-6 mb-3 st-block">
                 <h3>Download</h3>
                 <p class="display-4 st-value"><span id="st-download"></span></p>
@@ -69,12 +76,14 @@
             document.getElementById('st-stop').hidden = false
             worker = new Worker('speedtest_worker.min.js')
             var interval = setInterval(function () { worker.postMessage('status') }, 100)
+            var singlePot = window.location.hostname.match(/\./g).length < 3
             worker.onmessage = function (event) {
                 var download = document.getElementById('st-download')
                 var upload = document.getElementById('st-upload')
                 var ping = document.getElementById('st-ping')
                 var jitter = document.getElementById('st-jitter')
                 var ip = document.getElementById('st-ip')
+                var pot = document.getElementById('st-pot')
 
                 var data = event.data.split(';')
                 var status = Number(data[0])
@@ -93,8 +102,9 @@
                 ping.textContent = data[3]
                 ip.textContent = data[4]
                 jitter.textContent = data[5]
+                pot.textContent = data[6]
             }
-            worker.postMessage('start')
+            worker.postMessage('start {"enable_multiPots": '+singlePot+'}')
         }
         function stopTest() {
             if (worker) worker.postMessage('abort')

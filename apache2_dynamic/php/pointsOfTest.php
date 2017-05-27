@@ -6,10 +6,12 @@ header('Accept: application/json');
 
 // Points of test
 $pots = array(
-    "http://pot1.myserver", 
-    "http://pot2.myserver"
+    "http://ip4.speedtest.dev",
+    "http://ip6.speedtest.dev"
 );
 $routes = array(
+    "ping" => "/ping",
+    "ip" => "/ip",
     "download" => "/download/",
     "upload" => "/upload"
 );
