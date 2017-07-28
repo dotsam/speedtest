@@ -19,6 +19,10 @@
             content: "0.00";
             color: #636c72;
         }
+        #st-ip:empty::before {
+            content: "___.___.___.___";
+            color: #636c72;
+        }
     </style>
 </head>
 
@@ -31,35 +35,28 @@
                     <button id="st-start" class="btn btn-outline-primary st-btn" onclick="startTest()">Start</button>
                     <button id="st-stop" class="btn btn-danger st-btn" onclick="stopTest()" hidden="true">Stop</button>
                 </p>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-sm-4 mb-3">
                 <p class="lead">
                     Your IP: <span id="st-ip"></span>
+                    <input type="checkbox" id="st-ip-checkbox">
                 </p>
             </div>
-            <div class="col-sm-6 mb-3">
-                <p class="lead">
-                    Test Server: <span id="st-pot"></span>
-                </p>
-            </div>
-        </div>
-        <div class="row">
             <div class="col-lg-3 col-md-6 mb-3 st-block">
                 <h3>Download</h3>
                 <p class="display-4 st-value"><span id="st-download"></span></p>
                 <p class="lead">Mbit/s</p>
+                <p><input type="checkbox" id="st-download-checkbox"></p>
             </div>
             <div class="col-lg-3 col-md-6 mb-3 st-block">
                 <h3>Upload</h3>
                 <p class="display-4 st-value"><span id="st-upload"></span></p>
                 <p class="lead">Mbit/s</p>
+                <p><input type="checkbox" id="st-upload-checkbox"></p>
             </div>
             <div class="col-lg-3 col-md-6 mb-3 st-block">
                 <h3>Ping</h3>
                 <p class="display-4 st-value"><span id="st-ping"></span></p>
                 <p class="lead">ms</p>
+                <p><input type="checkbox" id="st-ping-checkbox" checked></p>
             </div>
             <div class="col-lg-3 col-md-6 mb-3 st-block">
                 <h3>Jitter</h3>
@@ -76,14 +73,12 @@
             document.getElementById('st-stop').hidden = false
             worker = new Worker('speedtest_worker.min.js')
             var interval = setInterval(function () { worker.postMessage('status') }, 100)
-            var singlePot = window.location.hostname.match(/\./g).length < 3
             worker.onmessage = function (event) {
                 var download = document.getElementById('st-download')
                 var upload = document.getElementById('st-upload')
                 var ping = document.getElementById('st-ping')
                 var jitter = document.getElementById('st-jitter')
                 var ip = document.getElementById('st-ip')
-                var pot = document.getElementById('st-pot')
 
                 var data = event.data.split(';')
                 var status = Number(data[0])
@@ -102,9 +97,19 @@
                 ping.textContent = data[3]
                 ip.textContent = data[4]
                 jitter.textContent = data[5]
-                pot.textContent = data[6]
             }
-            worker.postMessage('start {"enable_multiPots": '+singlePot+'}')
+            var ip_checkbox = document.getElementById("st-ip-checkbox")
+            var dl_checkbox = document.getElementById("st-download-checkbox")
+            var ul_checkbox = document.getElementById("st-upload-checkbox")
+            var ping_checkbox = document.getElementById("st-ping-checkbox")
+            var str_parameters = []
+
+            if (!ip_checkbox.checked) {str_parameters.push('"url_getIp": "-1"')}
+            if (!dl_checkbox.checked) {str_parameters.push('"url_dl": "-1"')}
+            if (!ul_checkbox.checked) {str_parameters.push('"url_ul": "-1"')}
+            if (!ping_checkbox.checked) {str_parameters.push('"url_ping": "-1"')}
+
+            worker.postMessage('start {' + str_parameters.join(",") + '}')
         }
         function stopTest() {
             if (worker) worker.postMessage('abort')

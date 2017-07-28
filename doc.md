@@ -1,7 +1,7 @@
 # HTML5 Speedtest
 
 > by Federico Dossena  
-> Version 4.2.1, May 15 2017  
+> Version 4.2.9, July 19 2017  
 > [https://github.com/adolfintel/speedtest/](https://github.com/adolfintel/speedtest/)
 
 
@@ -24,6 +24,9 @@ First of all, the requirements to run this test:
 
 If this looks good, let's proceed and see how to use the test.
 
+## Quick installation videos
+* [Debian 9.0 with Apache](https://fdossena.com/?p=speedtest/quickstart_deb.frag)
+* [Windows Server 2016 with IIS](https://fdossena.com/?p=speedtest/quickstart_win.frag)
 
 ## Installation
 To install the test on your server, upload the following files:
@@ -108,22 +111,22 @@ format:
     * `5` = Test aborted
 * __dlStatus__ is either
     * Empty string (not started or aborted)
-    * Download speed in Megabit/s as a number with 2 digits
+    * Download speed in Megabit/s as a number with 2 decimals
     * The string "Fail" (test failed)
 * __ulStatus__ is either
     * Empty string (not started or aborted)
-    * Upload speed in Megabit/s as a number with 2 digits
+    * Upload speed in Megabit/s as a number with 2 decimals
     * The string "Fail" (test failed)
 * __pingStatus__ is either
     * Empty string (not started or aborted)
-    * Estimated ping in milliseconds as a number with 2 digits
+    * Estimated ping in milliseconds as a number with 2 decimals
     * The string "Fail" (test failed)
 * __clientIp__ is either
     * Empty string (not fetched yet or failed)
     * The client's IP address as a string
 * __jitterStatus__ is either
     * Empty string (not started or aborted)
-    * Estimated jitter in milliseconds as a number with 2 digits (lower = stable connection)
+    * Estimated jitter in milliseconds as a number with 2 decimals (lower = stable connection)
     * The string "Fail" (test failed)
 * __pointOfTest__ is either
     * Empty string for a single server test or failure on list retrieval
@@ -134,23 +137,23 @@ format:
 * __isp__ Internet Service Provider name (http://ipinfo.io/developers#terms-of-use)
 
 ### Starting the test
-To start the test, send the start command to the worker:
+To start the test with the default settings, which is usually the best choice, send the start command to the worker:
 
 ```js
 w.postMessage('start')
 ```
 
-This starts the test with the default settings, which is usually the best choice. If you want, you can change these settings and pass them to the worker as JSON with like this:
+If you want, you can change these settings and pass them to the worker as JSON when you start it, like this:
 
 ```js
 w.postMessage('start {"param1": "value1", "param2": "value2", ...}')
 ```
 
 #### Test parameters
-* __time_dl__: How long the download test should be in seconds
+* __time_dl__: How long the download test should be in seconds. The test will continue regardless of this limit if the speed is still 0.00 when the limit is reached.
     * Default: `15`
     * Recommended: `>=5`
-* __time_ul__: How long the upload test should be in seconds
+* __time_ul__: How long the upload test should be in seconds. The test will continue regardless of this limit if the speed is still 0.00 when the limit is reached.
     * Default: `15`
     * Recommended: `>=10`
 * __count_ping__: How many pings to perform in the ping test
@@ -159,25 +162,31 @@ w.postMessage('start {"param1": "value1", "param2": "value2", ...}')
 * __ping_timeout__: Max wait time for a ping request in milliseconds
     * Default: `1000`
     * Recommended: `>=10`
-* __url_dl__: path to garbage.php or a large file to use for the download test
-    * Default: `/download/`
-    * __Important:__ route configured in .htaccess file
-* __url_ul__: path to ab empty file or empty.php to use for the upload test
-    * Default: `/upload`
-    * __Important:__ route configured in .htaccess file
+* __url_dl__: path to garbage.php or a large file to use for the download test.
+    * Default: `garbage.php`
+    * The string "-1" disables the test
+    * __Important:__ path is relative to js file
+* __url_ul__: path to an empty file or empty.php to use for the upload test
+    * Default: `empty.php`
+    * The string "-1" disables the test
+    * __Important:__ path is relative to js file
 * __url_ping__: path to an empty file or empty.php to use for the ping test
-    * Default: `/ping`
-    * __Important:__ route configured in .htaccess file
+    * Default: `empty.php`
+    * The string "-1" disables the test
+    * __Important:__ path is relative to js file
 * __url_getIp__: path to getIP.php or replacement
-    * Default: `/ip`
-    * __Important:__ route configured in .htaccess file
+    * Default: `getIP.php`
+    * The string "-1" disables the test
+    * __Important:__ path is relative to js file
 * __url_getPointsOfTest__: REST service URL to retrieve the list of available Points of Test
-    * Default: `/pots`
+    * Default: `pots.php`
 * __url_saveResult__: REST service URL to save test results
-    * Default: `/save`
+    * Default: `save.php`
 * __url_ispInfo___: Geolocation service and ISP information (http://ipinfo.io/developers#terms-of-use)
     * Default: `http://ipinfo.io`
-* __enable_quirks__: enables browser-specific optimizations. These optimizations override some of the default settings below. They do not override settings that are explicitly set.
+
+#### Advanced test parameters
+* __enable_quirks__: enables browser-specific optimizations. These optimizations override some of the default settings. They do not override settings that are explicitly set.
     * Default: `true`
 * __enable_multiPots__: enables multiple servers deployment with detection of lowest latency available
     * Default: `false`
@@ -194,15 +203,25 @@ w.postMessage('start {"param1": "value1", "param2": "value2", ...}')
     * Default: `3`
     * Recommended: `>=1`
     * Default override: 1 on Firefox if enable_quirks is true
-    * Default override: 10 on Safari if enable_quirks is true
-* __allow_fetchAPI__: allow the use of Fetch API for the download test instead of regular XHR. Experimental, not recommended.
-    * Default: `false`
-* __force_fetchAPI__: forces the use of Fetch API on all browsers that support it
-    * Default: `false`
-Fetch API are used if the following conditions are met:
-    * allow_fetchAPI is true
-    * Chromium-based browser with support for Fetch API and enable_quirks is true
-OR force_fetchAPI is true and the browser supports Fetch API
+* __xhr_ignoreErrors__: how to react to errors in download/upload streams and the ping test
+    * `0`: Fail test on error (behaviour of previous versions of this test)
+    * `1`: Restart a stream/ping when it fails
+    * `2`: Ignore all errors
+    * Default: `1`
+    * Recommended: `1`
+* __time_dlGraceTime__: How long to wait (in seconds) before actually measuring the download speed. This is a good idea because we want to wait for the TCP window to be at its maximum (or close to it)
+    * Default: `1.5`
+    * Recommended: `>=0`
+* __time_ulGraceTime__: How long to wait (in seconds) before actually measuring the upload speed. This is a good idea because we want to wait for the buffers to be full (avoids the peak at the beginning of the test)
+    * Default: `3`
+    * Recommended: `>=1`
+* __overheadCompensationFactor__: compensation for HTTP and network overhead. Default value assumes typical MTUs used over the Internet. You might want to change this if you're using this in your internal network with different MTUs, or if you're using IPv6 instead of IPv4.
+    * Default: `1.13359567567567567568` (1048576/925000) assumes HTTP+TCP+IPv4+ETH with typical MTUs used over the Internet
+    * `1.0513`: HTTP+TCP+IPv6+ETH, over the Internet (empirically tested, not calculated)
+    * `1.0369`: Alternative value for HTTP+TCP+IPv4+ETH, over the Internet (empirically tested, not calculated)
+    * `1460 / 1514`: TCP+IPv4+ETH, ignoring HTTP overhead
+    * `1440 / 1514`: TCP+IPv6+ETH, ignoring HTTP overhead
+    * `1`: ignore overheads. This measures the speed at which you actually download and upload files
 
 ### Aborting the test prematurely
 The test can be aborted at any time by sending an abort command to the worker:
@@ -213,8 +232,24 @@ w.postMessage('abort')
 
 This will terminate all network activity and stop the worker.
 
-__Important:__ do not simply kill the worker while it's running, as it will leave pending XHR requests!
+__Important:__ do not simply kill the worker while it's running, as it may leave pending XHR requests!
 
+## Troubleshooting
+These are the most common issues reported by users, and how to fix them
+
+#### Download test gives very low result
+Are garbage.php and empty.php (or your replacements) reachable?  
+Press F12, select network and start the test. Do you see errors? (cancelled requests are not errors)  
+If a small download starts, open it in a text editor. Does it say it's missing openssl_random_pseudo_bytes()? In this case, install OpenSSL (this is usually included when you install Apache and PHP on most distros).
+
+#### Upload test is inaccurate, and I see lag spikes
+Check your server's maximum POST size, make sure it's at least 20Mbytes, possibly more
+
+#### All tests are wrong, give extremely high results, browser lags/crashes, ...
+You're running the test on localhost, therefore it is trying to measure the speed of your loopback interface. The test is meant to be run over an Internet connection, from a different machine.
+
+#### Ping test shows double the actual ping
+Make sure your server is sending the ```Connection:keep-alive``` header
 
 ## Using the test without PHP
 If your server does not support PHP, or you're using something newer like Node.js, you can still use this test by replacing `garbage.php`, `empty.php` and `getIP.php` with equivalents.
@@ -231,12 +266,12 @@ It is important here to turn off compression, and generate incompressible data.
 A symlink to `/dev/urandom` is also ok.
 
 #### Replacement for `empty.php`
-Your replacement must simply respond with a HTTP code 200 and send nothing else. You may want to send additional headers to disable caching.
+Your replacement must simply respond with a HTTP code 200 and send nothing else. You may want to send additional headers to disable caching. The test assumes that Connection:keep-alive is sent by the server.
 
 #### Replacement for `getIP.php`
 Your replacement must simply respond with the client's IP as plaintext. Nothing fancy.
 
-### JS
+#### JS
 You need to start the test with your replacements like this:
 
 ```js
@@ -245,10 +280,13 @@ w.postMessage('start {"url_dl": "newGarbageURL", "url_ul": "newEmptyURL", "url_p
 
 
 ## Known bugs and limitations
+* The ping/jitter test is measured by seeing how long it takes for an empty XHR to complete. It is not an acutal ICMP ping
 * __Chrome:__ high CPU usage from XHR requests with very fast connections (like gigabit).
   For this reason, the test may report inaccurate results if your CPU is too slow. (Does not affect most computers)
 * __IE11:__ the upload test is not precise on very fast connections
+* __IE11:__ the upload test may not work over HTTPS
 * __Safari:__ works, but needs more testing and tweaking for very fast connections
+* __Firefox:__ on some Linux systems with hardware acceleration turned off, the page rendering makes the browser lag, reducing the accuracy of the ping/jitter test
 
 ## Making changes
 Since this is an open source project, you can modify it.
@@ -261,7 +299,7 @@ To create the minified version, use UglifyJS like this:
 uglifyjs -c --screw-ie8 speedtest_worker.js > speedtest_worker.min.js
 ```
 
-Pull requests are much appreciated. If you don't use github (or git), simply contact me.
+Pull requests are much appreciated. If you don't use github (or git), simply contact me at dosse91@paranoici.org.
 
 __Important:__ please add your name to modified versions to distinguish them from the main project.
 
